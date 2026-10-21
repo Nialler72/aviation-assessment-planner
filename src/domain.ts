@@ -48,6 +48,19 @@ export function weekCounts(rows: Assessment[]) {
   for (const row of rows) { const key = weekStart(row.due_date); counts.set(key, (counts.get(key) || 0) + 1); }
   return [...counts].sort(([a], [b]) => a.localeCompare(b));
 }
+export function groupWorkload(rows: Assessment[], start: string, groups: readonly string[] = GROUPS) {
+  const items = rows.filter(r => weekStart(r.due_date) === start);
+  return groups.map(group => ({ group, count: items.filter(r => r.groups.includes(group)).length }));
+}
+export function workloadSummary(rows: Assessment[], start: string, groups: readonly string[] = GROUPS) {
+  const loads = groupWorkload(rows, start, groups);
+  const max = Math.max(0, ...loads.map(x => x.count));
+  const min = Math.min(...loads.map(x => x.count));
+  const text = groups.length === 1
+    ? `${max} assessments for ${groupLabel(groups[0])}`
+    : min === max ? `${max} assessments per group` : `${min}–${max} assessments per group`;
+  return { max, text, loads };
+}
 export function validate(d: Draft) {
   if (!(LECTURERS as readonly string[]).includes(d.lecturer)) return 'Select a lecturer.';
   if (!(MODULES as readonly string[]).includes(d.module)) return 'Select a module.';

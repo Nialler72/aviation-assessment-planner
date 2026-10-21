@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { weekStart, traffic, inReadingWeek, validate, sampleData, weekCounts, LECTURERS, MODULES, TYPES, GROUPS } from './domain';
+import { groupWorkload, workloadSummary, groupLabel, weekStart, traffic, inReadingWeek, validate, sampleData, weekCounts, LECTURERS, MODULES, TYPES, GROUPS } from './domain';
+describe('per-group workload', () => {
+  const rows = [...GROUPS.map(g => [g]), GROUPS.slice(0,3), GROUPS.slice(3)].map((groups,i) => ({...sampleData()[0],id:String(i),groups,due_date:'2026-12-01'}));
+  it('keeps eight entries separate from two assessments per group in Week 12', () => {
+    expect(weekCounts(rows)).toEqual([['2026-11-30',8]]);
+    expect(groupWorkload(rows,'2026-11-30').map(x => x.count)).toEqual([2,2,2,2,2,2]);
+    const summary = workloadSummary(rows,'2026-11-30');
+    expect(summary.text).toBe('2 assessments per group');
+    expect(traffic(summary.max)).toBe('green');
+  });
+  it('flags only the overloaded group, including when filtering', () => {
+    const extra = Array.from({length:3},(_,i) => ({...rows[0],id:'extra'+i,groups:['AVIATION_4']}));
+    const loads = groupWorkload([...rows,...extra],'2026-11-30');
+    expect(loads.filter(x => traffic(x.count) === 'red')).toEqual([{group:'AVIATION_4',count:5}]);
+    expect(workloadSummary([...rows,...extra],'2026-11-30',['AVIATION_1']).max).toBe(2);
+    expect(groupWorkload(rows,'2026-12-07').every(x => x.count === 0)).toBe(true);
+    expect(groupLabel('AVIATION_4')).toBe('Aviation 4');
+  });
+});
 describe('academic scheduling', () => {
   it('uses Monday weeks and includes Sunday without timezone drift', () => {
     expect(weekStart('2026-11-01')).toBe('2026-10-26');

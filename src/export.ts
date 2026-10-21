@@ -1,8 +1,8 @@
-import { type Assessment, groupLabel, weekCounts, workloadLabel } from './domain';
+import { GROUPS, groupWorkload, type Assessment, groupLabel, weekCounts, workloadLabel } from './domain';
 const headings = ['Week beginning', 'Due date', 'Module', 'Assessment', 'Lecturer', 'Type', 'Weighting (%)', 'Groups', 'Notes'];
 import { weekStart } from './domain';
 const values = (r: Assessment) => [weekStart(r.due_date), r.due_date, r.module, r.title, r.lecturer, r.type, r.weighting, r.groups.map(groupLabel).join(', '), r.notes];
-export async function exportExcel(rows: Assessment[], scope: string) {
+export async function exportExcel(rows: Assessment[], scope: string, groups: readonly string[] = GROUPS) {
   const { default: ExcelJS } = await import('exceljs');
   const book = new ExcelJS.Workbook();
   book.creator = 'SETU Aviation Assessment Planner';
@@ -17,8 +17,12 @@ export async function exportExcel(rows: Assessment[], scope: string) {
   sheet.views = [{ state: 'frozen', ySplit: 3 }];
   sheet.autoFilter = { from: 'A3', to: `I${Math.max(3, sheet.rowCount)}` };
   const workload = book.addWorksheet('Weekly workload');
-  workload.addRow(['Week beginning', 'Assessments', 'Workload']);
-  weekCounts(rows).forEach(([w,n]) => workload.addRow([w,n,workloadLabel(n)]));
+  workload.addRow(['Week beginning', 'Group', 'Assessments for group', 'Workload']);
+  weekCounts(rows).forEach(([w]) => groupWorkload(rows,w,groups).forEach(x => workload.addRow([w,groupLabel(x.group),x.count,workloadLabel(x.count)])));
+  const entries = book.addWorksheet('Weekly entries');
+  entries.addRow(['Week beginning','Scheduled entries']);
+  weekCounts(rows).forEach(([w,n]) => entries.addRow([w,n]));
+  entries.columns.forEach(c => c.width = 24);
   workload.columns.forEach(c => c.width = 24);
   const data = await book.xlsx.writeBuffer();
   download(new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), 'aviation-assessments.xlsx');
