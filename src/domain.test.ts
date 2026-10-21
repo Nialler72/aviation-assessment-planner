@@ -27,3 +27,13 @@ describe('academic scheduling', () => {
     expect(TYPES).toHaveLength(8); expect(GROUPS).toHaveLength(6);
   });
 });
+
+describe('daily week navigation', () => {
+  it('shows all seven days across month and year boundaries', async () => {
+    const {weekDays,shiftDate}=await import('./domain');
+    expect(weekDays('2026-12-28')).toEqual(['2026-12-28','2026-12-29','2026-12-30','2026-12-31','2027-01-01','2027-01-02','2027-01-03']);
+    expect(shiftDate('2026-11-02',-7)).toBe('2026-10-26');
+    expect(shiftDate('2026-11-30',7)).toBe('2026-12-07');
+    expect(weekDays('2026-10-26')[6]).toBe('2026-11-01');
+  });
+});

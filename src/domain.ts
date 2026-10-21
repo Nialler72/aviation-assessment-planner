@@ -30,6 +30,12 @@ export function weekStart(date: string) {
 export function traffic(count: number) {
   return count === 0 ? 'empty' : count <= 2 ? 'green' : count <= 4 ? 'amber' : 'red';
 }
+export function shiftDate(date: string, days: number) {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+export const weekDays = (start: string) => Array.from({ length: 7 }, (_, i) => shiftDate(start, i));
 export const workloadLabel = (count: number) => ({ empty: 'No assessments', green: 'Balanced', amber: 'Busy', red: 'High workload' })[traffic(count)];
 export function typeColor(type: string) {
   return ({ Quiz: 'green', 'Lab Report': 'yellow', 'Class Test': 'orange', Presentation: 'blue', 'Project Milestone': 'red', 'Project Submission': 'red' } as Record<string, string>)[type] || 'purple';
